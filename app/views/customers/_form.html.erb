@@ -1,4 +1,4 @@
-<%= form_with(model: customer, local: true) do |form| %>
+<%= form_with(model: customer, local: true, id: 'customer_form') do |form| %>
   <% if customer.errors.any? %>
     <div id="error_explanation">
       <h2><%= pluralize(customer.errors.count, "error") %> prohibited this customer from being saved:</h2>
@@ -13,30 +13,256 @@
 
   <div class="field">
     <%= form.label :state_id %>
-    <%= form.collection_select :state_id, State.all, :id, :name, {prompt: "Select"}, {id: :customer_state_id} %>
+    <%= form.collection_select :state_id, State.all, :id, :name, {prompt: "Select"}, {id: :customer_state_id} %><br/>
+    <span id="stateError"></span>
   </div>
 
   <div class="field">
     <%= form.label :city_id %>
-    <%= form.collection_select :city_id, City.all, :id, :name, {prompt: "Select"}, {id: :customer_city_id} %>
+    <%= form.collection_select :city_id, City.all, :id, :name, {prompt: "Select"}, {id: :customer_city_id} %><br/>
+    <span id="cityError"></span>
   </div>
 
   <div class="field">
     <%= form.label :name %>
-    <%= form.text_field :name, id: :customer_name %>
+    <%= form.text_field :name, id: :customer_name %><br/>
+    <span id="nameError"></span>
   </div>
 
   <div class="field">
     <%= form.label :email %>
-    <%= form.text_field :email, id: :customer_email %>
+    <%= form.text_field :email, id: :customer_email %><br/>
+    <span id="emailError"></span>
   </div>
 
   <div class="field">
     <%= form.label :mobile %>
-    <%= form.text_field :mobile, id: :customer_mobile %>
+    <%= form.text_field :mobile, id: :customer_mobile %><br/>
+    <span id="mobileError"></span>
   </div>
 
   <div class="actions">
-    <%= form.submit %>
+    <%= form.submit "Submit", id: 'submit' %>
   </div>
 <% end %>
+
+<script>
+  var mobileFormat = /^\d+$/;
+  var emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  var nameFormat = /^[a-zA-Z]*$/;
+
+  var stateHandle = document.getElementById('customer_state_id');
+  var cityHandle = document.getElementById('customer_city_id');
+  var nameHandle = document.getElementById('customer_name');
+  var emailHandle = document.getElementById('customer_email');
+  var mobileHandle = document.getElementById('customer_mobile');
+  var formHandle = document.getElementById('customer_form');
+  var submitHandle = document.getElementById('submit');
+
+
+  var stateErrorHandle = document.getElementById('stateError');
+  var cityErrorHandle = document.getElementById('cityError');
+  var nameErrorHandle = document.getElementById('nameError');
+  var emailErrorHandle = document.getElementById('emailError');
+  var mobileErrorHandle = document.getElementById('mobileError');// $('#mobileError')
+
+  var validator = {
+    stateValid: false,
+    cityValid: false,
+    nameValid: false,
+    emailValid: false,
+    mobileValid: false
+  };
+  function stateValidation(){
+    if(stateHandle.value === ""){
+      validator.stateValid = false;
+      stateErrorHandle.innerHTML = "can't be blank";
+    }else{
+      validator.stateValid = true;
+      stateErrorHandle.innerHTML = "";
+    }
+  }
+
+  function cityValidation(){
+    if(cityHandle.value === ""){
+      validator.cityValid = false;
+      cityErrorHandle.innerHTML = "can't be blank";
+    }else{
+      validator.cityValid = true;
+      cityErrorHandle.innerHTML = "";
+    }
+  }
+
+  function nameValidation(){
+    if(nameHandle.value === ""){
+      validator.nameValid = false;
+      nameErrorHandle.innerHTML = "can't be blank";
+    }else if(!nameFormat.test(nameHandle.value)){
+      validator.nameValid = false;
+      nameErrorHandle.innerHTML = "should only be alphabets"
+    }else{
+      validator.nameValid = true;
+      nameErrorHandle.innerHTML = "";
+    }
+  }
+
+  function emailValidation(){
+    if(emailHandle.value === ""){
+      validator.emailValid = false;
+      emailErrorHandle.innerHTML = "can't be blank";
+    }else if(!emailFormat.test(emailHandle.value)){
+      validator.emailValid = false;
+      emailErrorHandle.innerHTML = "should be a valid email";
+    }else{
+      // validator.emailValid = false;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', `/customers/check_email_present?email=${emailHandle.value}`, true);
+    xhr.onreadystatechange = function(){
+      if(xhr.readyState === 4 && xhr.status === 200){
+        var response = JSON.parse(xhr.responseText);
+        emailErrorHandle.innerHTML = response.msg
+        if(response.msg === 'email can be used'){
+          validator.emailValid = true;
+        }
+      }
+    }
+    xhr.send();
+    }
+  }
+
+  function mobileValidation(){
+    if(mobileHandle.value === ""){
+      validator.mobileValid = false;
+      mobileErrorHandle.innerHTML = "can't be blank";
+    }else if(!mobileFormat.test(mobileHandle.value)){
+      validator.mobileValid = false;
+      mobileErrorHandle.innerHTML = "should be a number";
+    }else if(mobileHandle.value.length !== 10){
+      validator.mobileValid = false;
+      mobileErrorHandle.innerHTML = "must be 10 digits";
+    }else{
+      // validator.mobileValid = false;
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', `/customers/check_mobile_present?mobile=${mobileHandle.value}`, true);
+      xhr.onreadystatechange = function(){
+        if(xhr.readyState === 4 && xhr.status === 200){
+          var response = JSON.parse(xhr.responseText);
+          mobileErrorHandle.innerHTML = response.msg;
+          if(response.msg === 'mobile can be used'){
+            validator.mobileValid = true;
+          }
+        }
+      }
+      xhr.send();
+    }
+    
+  }
+
+  formHandle.addEventListener('submit', function(e){
+    stateValidation();
+    cityValidation();
+    nameValidation();
+    emailValidation();
+    mobileValidation();
+    
+    if(Object.values(validator).includes(false)){
+      e.preventDefault();
+      setTimeout(function(){
+        submitHandle.disabled = false;
+      }, 100);
+    }else{
+      e.preventDefault();
+      var formData ={
+        "utf8": formHandle.elements[0].value,
+        "authenticity_token": formHandle.elements[1].value,
+        "customer": {
+          "name": nameHandle.value,
+          "email": emailHandle.value,
+          "mobile": mobileHandle.value,
+          "state_id": stateHandle.value,
+          "city_id": cityHandle.value
+        }
+      };
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/customers', true);
+      console.log(formData);
+      xhr.onreadystatechange = function(){
+        if(xhr.readyState === 4 && xhr.status === 200){
+          var customer = JSON.parse(xhr.responseText);
+          formHandle.reset();
+          setTimeout(function(){
+            submitHandle.disabled = false;
+          },100);
+
+          tr = document.createElement('tr');
+          stateTd = document.createElement('td');
+          stateText = document.createTextNode(customer.state_name);
+          stateTd.appendChild(stateText);
+
+          cityTd = document.createElement('td');
+          cityText = document.createTextNode(customer.city_name);
+          cityTd.appendChild(cityText);
+
+          nameTd = document.createElement('td');
+          nameText = document.createTextNode(customer.name);
+          nameTd.appendChild(nameText);
+
+          emailTd = document.createElement('td');
+          emailText = document.createTextNode(customer.email);
+          emailTd.appendChild(emailText);
+
+          mobileTd = document.createElement('td');
+          mobileText = document.createTextNode(customer.mobile);
+          mobileTd.appendChild(mobileText);
+
+          tr.appendChild(stateTd);
+          tr.appendChild(cityTd);
+          tr.appendChild(nameTd);
+          tr.appendChild(emailTd);
+          tr.appendChild(mobileTd);
+
+          document.getElementById('body').appendChild(tr);
+          document.querySelector('#count').innerText = customer.customers_count;
+        }
+      }
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(JSON.stringify(formData));
+    }
+  }, false)
+
+  stateHandle.addEventListener( 'change', function(){
+    cityHandle.innerHTML = "";
+    var url = `/states/get_cities?state_id=${stateHandle.value}`;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET',url,true);
+    xhr.onreadystatechange = function(){
+      if(xhr.readyState === 4 && xhr.status === 200){
+        var cities = JSON.parse(xhr.responseText);
+
+        cities.forEach(function(city){
+          var option = document.createElement('option');
+          var optValue = document.createAttribute('value');
+          optValue.value = city.id
+          option.setAttributeNode(optValue);
+          var text = document.createTextNode(city.name);
+          option.appendChild(text);
+          cityHandle.appendChild(option);
+        })
+      }
+    }
+    xhr.send();
+  }, false)
+
+
+  emailHandle.addEventListener('blur', function(){
+    emailValidation();
+    
+  }, false)
+
+
+  mobileHandle.addEventListener('blur', function(){
+    mobileValidation();
+    
+  }, false)
+</script>

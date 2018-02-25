@@ -1,0 +1,4 @@
+document.getElementById('new_person').reset();
+document.getElementById('notice').innnerHTML = "New person added - <%= @person.name %>";
+document.getElementById('count').innnerHTML = "<%= Person.count %>";
+document.getElementById('body').appendChild("<%= escape_javascript render 'person'")

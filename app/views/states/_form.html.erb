@@ -13,10 +13,35 @@
 
   <div class="field">
     <%= form.label :name %>
-    <%= form.text_field :name, id: :state_name %>
+    <%= form.text_field :name, id: :state_name %><br/>
+    <span id="nameError"></span>
   </div>
 
   <div class="actions">
     <%= form.submit %>
   </div>
 <% end %>
+
+<script>
+  var nameHandle = document.getElementById('state_name');
+  var nameErrorHandle = document.getElementById('nameError');
+
+  nameHandle.addEventListener('blur', function(){
+    if(nameHandle.value === ""){
+      nameErrorHandle.innerHTML = "can't be blank";
+    }else{
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', `/states/check_name_present?name=${nameHandle.value}`, true);
+      xhr.onreadystatechange = function(){
+        if(xhr.readyState === 4 && xhr.status === 200){
+          var response = JSON.parse(xhr.responseText);
+          nameErrorHandle.innerHTML = response.msg; 
+        }
+      }
+      xhr.send();
+    }
+  }, false);
+  nameHandle.addEventListener('focus', function(){
+    nameErrorHandle.innerHTML = "";
+  }, false)
+</script>

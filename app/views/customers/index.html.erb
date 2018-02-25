@@ -1,6 +1,6 @@
 <p id="notice"><%= notice %></p>
 
-<h1>Customers</h1>
+<h1>Customers </h1><h1 id="count"><%= @customers.count %></h1>
 
 <table>
   <thead>
@@ -14,7 +14,7 @@
     </tr>
   </thead>
 
-  <tbody>
+  <tbody id="body">
     <% @customers.each do |customer| %>
       <tr>
         <td><%= customer.state.name %></td>
@@ -32,4 +32,6 @@
 
 <br>
 
-<%= link_to 'New Customer', new_customer_path %>
+<%#= link_to 'New Customer', new_customer_path %>
+<h2>Add customer</h2>
+<%= render 'form', customer: @customer %>

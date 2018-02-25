@@ -61,9 +61,16 @@ class StatesController < ApplicationController
     end
   end
 
+  #/states/get_cities?state_id=1
   def get_cities
     @state = State.find(params[:state_id])
     render json: @state.cities
+  end
+
+  #/states/check_name_present?name=kerala
+  def check_name_present
+    @state = State.find_by(name: params[:name])
+    render json: @state.nil? ? {'msg': 'can be used'} : {'msg': 'already taken'}
   end
 
   private
